@@ -125,7 +125,7 @@ export function Observatori() {
         {/* peu: timeline + ajuda */}
         <div className="flex flex-col gap-3 w-full">
           {ds.temporal && ds.periods && (
-            <Card className="pointer-events-auto w-full border-white/10 bg-[#0c111c]/80 p-4 text-[#e8eef7] backdrop-blur">
+            <Card className="pointer-events-auto w-full max-w-lg mx-auto border-white/10 bg-[#0c111c]/80 p-4 text-[#e8eef7] backdrop-blur">
               <div className="mb-2 flex items-center justify-between">
                 <span className="font-mono text-xs uppercase tracking-wider opacity-60">
                   Període
@@ -143,7 +143,7 @@ export function Observatori() {
               />
             </Card>
           )}
-          <div className="font-mono text-xs opacity-40">
+          <div className="font-mono text-xs opacity-40 text-center">
             Arrossega per orbitar · Scroll per a fer zoom
           </div>
         </div>
