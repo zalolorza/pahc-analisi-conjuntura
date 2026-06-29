@@ -14,8 +14,9 @@ export interface LightInfo {
   litFloors: number;
   totalFloors: number;
   biMetricSet: Map<number, Set<number>>;
-  // per a les etiquetes: bi → mètriques presents
+  // per a les etiquetes: bi → mètriques presents / finestres enceses
   metricBiSets: Set<number>[];
+  metricBiWindowCounts: Map<number, number>[];
   epoch: number; // incrementa a cada repaint (per sincronitzar la càmera)
 }
 
@@ -85,6 +86,7 @@ export function Windows({ city, metrics, counts, bloom, onLight }: WindowsProps)
       litFloors = 0;
     const biMetricSet = new Map<number, Set<number>>();
     const metricBiSets: Set<number>[] = metrics.map(() => new Set<number>());
+    const metricBiWindowCounts: Map<number, number>[] = metrics.map(() => new Map());
 
     metrics.forEach((m, mi) => {
       const enabled = m.enabled !== false;
@@ -97,10 +99,14 @@ export function Windows({ city, metrics, counts, bloom, onLight }: WindowsProps)
         if (!enabled) continue;
         litFloors++;
         const off = buildingOffset[fl.bi];
+        const w = fl.idxs.length;
         for (const idx of fl.idxs) inst.setColorAt(off + idx, color);
         metricBiSets[mi].add(fl.bi);
+        metricBiWindowCounts[mi].set(
+          fl.bi,
+          (metricBiWindowCounts[mi].get(fl.bi) ?? 0) + w
+        );
         const b = city.buildings[fl.bi];
-        const w = fl.idxs.length;
         lightX += b.position.x * w;
         lightZ += b.position.z * w;
         lightW += w;
@@ -119,6 +125,7 @@ export function Windows({ city, metrics, counts, bloom, onLight }: WindowsProps)
       totalFloors: TOTAL_FLOORS,
       biMetricSet,
       metricBiSets,
+      metricBiWindowCounts,
       epoch: lightEpoch.current,
     });
     // onLight no a deps a propòsit (callback estable del pare)

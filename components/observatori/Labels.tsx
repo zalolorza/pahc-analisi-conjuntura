@@ -11,28 +11,27 @@ interface LabelsProps {
   city: CityData;
   metrics: Metric[];
   metricBiSets: Set<number>[];
+  metricBiWindowCounts: Map<number, number>[];
   unit: string;
 }
 
-export function Labels({ city, metrics, metricBiSets, unit }: LabelsProps) {
+export function Labels({
+  city,
+  metrics,
+  metricBiSets,
+  metricBiWindowCounts,
+  unit,
+}: LabelsProps) {
   const placed = useMemo(() => {
-    // bi → quantes mètriques diferents hi toquen
-    const biToMetrics = new Map<number, Set<number>>();
-    metricBiSets.forEach((biSet, mi) => {
-      biSet.forEach((bi) => {
-        if (!biToMetrics.has(bi)) biToMetrics.set(bi, new Set());
-        biToMetrics.get(bi)!.add(mi);
-      });
-    });
-
-    // candidats per mètrica, ordenats per (puresa, alçada)
-    const ranked = metricBiSets.map((biSet) => {
+    // candidats per mètrica, ordenats per (finestres enceses, alçada)
+    const ranked = metricBiSets.map((biSet, mi) => {
+      const counts = metricBiWindowCounts[mi] ?? new Map<number, number>();
       const list: { bi: number; h: number; score: number }[] = [];
       biSet.forEach((bi) => {
         const b = city.buildings[bi];
         const h = b.floors * 0.85;
-        const pure = (biToMetrics.get(bi)?.size ?? 1) === 1;
-        list.push({ bi, h, score: (pure ? 1000 : 0) + h });
+        const litWindows = counts.get(bi) ?? 0;
+        list.push({ bi, h, score: litWindows * 1000 + h });
       });
       list.sort((a, z) => z.score - a.score);
       return list;
@@ -75,7 +74,7 @@ export function Labels({ city, metrics, metricBiSets, unit }: LabelsProps) {
       out.push({ mi, x: b.position.x, z: b.position.z, topY, labelY });
     });
     return out;
-  }, [city, metrics, metricBiSets]);
+  }, [city, metrics, metricBiSets, metricBiWindowCounts]);
 
   return (
     <group>

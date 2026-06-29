@@ -19,7 +19,7 @@ interface CameraRigProps {
 
 function cityLookAtY(city: CityData) {
   const maxH = Math.max(...city.buildings.map((b) => b.height));
-  return maxH * 0.38;
+  return maxH * 0.42;
 }
 
 // arrodoneix un angle a la cantonada diagonal més propera (45/135/225/315°)
@@ -49,29 +49,32 @@ function quadrantForBi(bi: number, city: CityData) {
   return 3;
 }
 
-// Centroid de finestres enceses; si no n'hi ha, cantonada amb més edificis encesos.
+// Prioritat: (1) edifici cantoner amb més variabilitat de mètriques,
+// (2) cantonada amb més edificis encesos.
 function computeAimPosition(light: LightInfo, city: CityData) {
-  if (light.lightW > 0) {
-    return {
-      x: light.lightX / light.lightW,
-      z: light.lightZ / light.lightW,
-    };
-  }
-
   const corners = cornerBuildingIndices(city);
   const litPerQuadrant = [0, 0, 0, 0];
   light.biMetricSet.forEach((_metrics, bi) => {
     litPerQuadrant[quadrantForBi(bi, city)]++;
   });
+
   let bestQuadrant = 0;
-  let bestLitBuildings = 0;
+  let bestVariability = -1;
+  let bestLitBuildings = -1;
   for (let q = 0; q < 4; q++) {
-    if (litPerQuadrant[q] > bestLitBuildings) {
-      bestLitBuildings = litPerQuadrant[q];
+    const variability = light.biMetricSet.get(corners[q])?.size ?? 0;
+    const lit = litPerQuadrant[q];
+    if (
+      variability > bestVariability ||
+      (variability === bestVariability && lit > bestLitBuildings)
+    ) {
+      bestVariability = variability;
+      bestLitBuildings = lit;
       bestQuadrant = q;
     }
   }
-  if (bestLitBuildings > 0) {
+
+  if (bestVariability > 0 || bestLitBuildings > 0) {
     const b = city.buildings[corners[bestQuadrant]];
     return { x: b.position.x, z: b.position.z };
   }
@@ -120,8 +123,9 @@ export function CameraRig({ aim, city }: CameraRigProps) {
 
   useEffect(() => {
     const cam = camera as THREE.PerspectiveCamera;
-    const shift = size.height * 0.1;
-    cam.setViewOffset(size.width, size.height, 0, -shift, size.width, size.height);
+    // offsetY positiu desplaça l'escena cap amunt dins el viewport
+    const shift = size.height * 0.15;
+    cam.setViewOffset(size.width, size.height, 0, shift, size.width, size.height);
     return () => cam.clearViewOffset();
   }, [camera, size.width, size.height]);
 
@@ -198,7 +202,7 @@ export function CameraRig({ aim, city }: CameraRigProps) {
       let diff = s.targetTheta - s.theta;
       while (diff > Math.PI) diff -= 2 * Math.PI;
       while (diff < -Math.PI) diff += 2 * Math.PI;
-      if (Math.abs(diff) > 0.002) s.theta += diff * 0.15;
+      if (Math.abs(diff) > 0.002) s.theta += diff * 0.06;
       else {
         s.theta = s.targetTheta;
         s.targetTheta = null;
@@ -207,7 +211,7 @@ export function CameraRig({ aim, city }: CameraRigProps) {
     // anima phi
     if (s.targetPhi !== null && !s.dragging && !s.userInteracted) {
       const diff = s.targetPhi - s.phi;
-      if (Math.abs(diff) > 0.002) s.phi += diff * 0.15;
+      if (Math.abs(diff) > 0.002) s.phi += diff * 0.06;
       else {
         s.phi = s.targetPhi;
         s.targetPhi = null;

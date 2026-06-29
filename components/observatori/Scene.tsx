@@ -40,6 +40,8 @@ export function Scene({ metrics, counts, unit, datasetIndex, onCity }: SceneProp
   );
 
   const metricBiSets = light?.metricBiSets ?? metrics.map(() => new Set<number>());
+  const metricBiWindowCounts =
+    light?.metricBiWindowCounts ?? metrics.map(() => new Map<number, number>());
 
   return (
     <Canvas
@@ -66,7 +68,13 @@ export function Scene({ metrics, counts, unit, datasetIndex, onCity }: SceneProp
         bloom
         onLight={onLight}
       />
-      <Labels city={city} metrics={metrics} metricBiSets={metricBiSets} unit={unit} />
+      <Labels
+        city={city}
+        metrics={metrics}
+        metricBiSets={metricBiSets}
+        metricBiWindowCounts={metricBiWindowCounts}
+        unit={unit}
+      />
 
       {/* terra */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]}>
