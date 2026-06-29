@@ -16,10 +16,11 @@ interface SceneProps {
   counts: number[];
   unit: string;
   datasetIndex: number;
+  invert?: boolean;
   onCity: (totalFloors: number) => void;
 }
 
-export function Scene({ metrics, counts, unit, datasetIndex, onCity }: SceneProps) {
+export function Scene({ metrics, counts, unit, datasetIndex, invert = false, onCity }: SceneProps) {
   // construïm la ciutat un sol cop
   const city = useMemo(() => {
     const c = buildCity(6, 5, 1, 0.68);
@@ -66,6 +67,7 @@ export function Scene({ metrics, counts, unit, datasetIndex, onCity }: SceneProp
         metrics={metrics}
         counts={counts}
         bloom
+        invert={invert}
         onLight={onLight}
       />
       <Labels

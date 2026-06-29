@@ -23,21 +23,31 @@ export function Labels({
   unit,
 }: LabelsProps) {
   const placed = useMemo(() => {
-    // candidats per mètrica, ordenats per (finestres enceses, alçada)
+    // bi → mètriques presents (per detectar edificis d'un sol color)
+    const biToMetrics = new Map<number, Set<number>>();
+    metricBiSets.forEach((biSet, mi) => {
+      biSet.forEach((bi) => {
+        if (!biToMetrics.has(bi)) biToMetrics.set(bi, new Set());
+        biToMetrics.get(bi)!.add(mi);
+      });
+    });
+
+    // candidats per mètrica: (1) monocolor, (2) més finestres del color, (3) alçada
     const ranked = metricBiSets.map((biSet, mi) => {
       const counts = metricBiWindowCounts[mi] ?? new Map<number, number>();
       const list: { bi: number; h: number; score: number }[] = [];
       biSet.forEach((bi) => {
         const b = city.buildings[bi];
         const h = b.floors * 0.85;
+        const monochrome = (biToMetrics.get(bi)?.size ?? 0) === 1;
         const litWindows = counts.get(bi) ?? 0;
-        list.push({ bi, h, score: litWindows * 1000 + h });
+        list.push({ bi, h, score: (monochrome ? 1_000_000 : 0) + litWindows * 1000 + h });
       });
       list.sort((a, z) => z.score - a.score);
       return list;
     });
 
-    // assignació greedy sense conflictes
+    // assignació greedy: cap edifici rep més d'una etiqueta
     const used = new Set<number>();
     const anchors = metricBiSets.map((_, mi) => {
       for (const cand of ranked[mi]) {
@@ -46,11 +56,9 @@ export function Labels({
           return cand;
         }
       }
-      return ranked[mi][0];
+      return undefined;
     });
 
-    // apilament vertical per edifici compartit
-    const stackByBi = new Map<number, number>();
     const out: {
       mi: number;
       x: number;
@@ -66,12 +74,13 @@ export function Labels({
       if (!anchor) return;
       const b = city.buildings[anchor.bi];
       const maxH = anchor.h;
-      const stackIdx = stackByBi.get(anchor.bi) ?? 0;
-      stackByBi.set(anchor.bi, stackIdx + 1);
-      const STACK_GAP = 0.85;
-      const labelY = maxH + 2.8 + stackIdx * STACK_GAP;
-      const topY = maxH + 0.6;
-      out.push({ mi, x: b.position.x, z: b.position.z, topY, labelY });
+      out.push({
+        mi,
+        x: b.position.x,
+        z: b.position.z,
+        topY: maxH + 0.6,
+        labelY: maxH + 2.8,
+      });
     });
     return out;
   }, [city, metrics, metricBiSets, metricBiWindowCounts]);

@@ -22,6 +22,8 @@ export interface Dataset {
   normalizeToMax?: boolean;
   /** categories actives en carregar; la resta arrenquen desactivades */
   defaultEnabled?: string[];
+  /** inverteix l'ordre del flux al serpentí (categories grans al final) */
+  invert?: boolean;
   temporal?: boolean;
   periods?: string[];
   series?: Record<string, number[]>;

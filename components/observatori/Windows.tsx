@@ -25,13 +25,15 @@ interface WindowsProps {
   metrics: Metric[];
   counts: number[];
   bloom: boolean;
+  /** pinta des del final del serpentí (categories grans al cim) */
+  invert?: boolean;
   onLight?: (info: LightInfo) => void;
 }
 
 // Un únic InstancedMesh amb totes les finestres de la ciutat. El mapping
 // global → (edifici, índex local) es precalcula; el color s'actualitza a cada
 // canvi de distribució.
-export function Windows({ city, metrics, counts, bloom, onLight }: WindowsProps) {
+export function Windows({ city, metrics, counts, bloom, invert = false, onLight }: WindowsProps) {
   const ref = useRef<THREE.InstancedMesh>(null);
   const lightEpoch = useRef(0);
 
@@ -67,7 +69,8 @@ export function Windows({ city, metrics, counts, bloom, onLight }: WindowsProps)
     inst.instanceMatrix.needsUpdate = true;
   }, [matrices, total]);
 
-  // repaint: aplica colors segons la distribució de plantes (ordre serpentí)
+  // repaint: aplica colors segons la distribució de plantes (ordre serpentí;
+  // amb invert, des del final perquè les categories grans quedin al cim)
   useEffect(() => {
     const inst = ref.current;
     if (!inst || !inst.instanceColor) {
@@ -95,7 +98,7 @@ export function Windows({ city, metrics, counts, bloom, onLight }: WindowsProps)
         bloom ? 0.08 : 0.35
       );
       for (let j = 0; j < counts[mi] && p < TOTAL_FLOORS; j++, p++) {
-        const fl = FLOORS[p];
+        const fl = FLOORS[invert ? TOTAL_FLOORS - 1 - p : p];
         if (!enabled) continue;
         litFloors++;
         const off = buildingOffset[fl.bi];
@@ -130,7 +133,7 @@ export function Windows({ city, metrics, counts, bloom, onLight }: WindowsProps)
     });
     // onLight no a deps a propòsit (callback estable del pare)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [metrics, counts, bloom, city, total, buildingOffset]);
+  }, [metrics, counts, bloom, invert, city, total, buildingOffset]);
 
   return (
     <instancedMesh ref={ref} args={[undefined, undefined, total]} frustumCulled={false}>

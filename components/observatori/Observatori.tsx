@@ -35,6 +35,7 @@ export function Observatori() {
         counts={obs.counts}
         unit={ds.unit}
         datasetIndex={obs.datasetIndex}
+        invert={ds.invert}
         onCity={onCity}
       />
 

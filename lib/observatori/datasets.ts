@@ -57,7 +57,7 @@ export const DATASETS: Dataset[] = [
   }),
   expandTemporal({
     id: "vot_evolucio",
-    name: "Estimació de vot",
+    name: "Auge de l'extrema dreta",
     scope: "Catalunya",
     desc: "Intenció de vot al Parlament de Catalunya (CEO). Mou el control temporal per veure l'evolució.",
     unit: "%",
@@ -78,6 +78,12 @@ export const DATASETS: Dataset[] = [
       Comuns: [7, 5, 6, 7, 8, 10, 9, 6, 6, 6, 5, 6],
       CUP: [8, 8, 8, 8, 8, 8, 6, 6, 6, 6, 5, 5],
     },
+    defaultEnabled: [
+      "Aliança",
+      "Vox",
+      "PP",
+      "Junts",
+    ],
   }),
   // Desnonaments per causa (Partit Judicial de Manresa) — volum absolut (Taula 26 CGPJ)
   expandTemporal({
@@ -118,6 +124,7 @@ export const DATASETS: Dataset[] = [
       "2 a 4 habitatges": [18.99, 22.12],
       "5 o més habitatges": [20.4, 22.45],
     },
+    invert: true,
   }),
   // Grans tenidors sobre el parc total (Manresa) — Taula 18
   {
@@ -153,5 +160,6 @@ export const DATASETS: Dataset[] = [
       "Banc Sabadell": 0.9,
       CaixaBank: 0.67,
     },
+    invert: true,
   },
 ];
