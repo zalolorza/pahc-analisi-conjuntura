@@ -22,12 +22,77 @@ export function Observatori() {
 
   const obs = useObservatori(DATASETS, totalFloors || 1);
 
-  const [legendOpen, setLegendOpen] = useState(true);
   const ds = obs.dataset;
 
   const legendMetrics = ds.legendByLabel
     ? obs.metrics
     : [...obs.metrics].sort((a, b) => b.value - a.value);
+
+  const SelectorDataset = ({ className, defaultLegendOpen }: { className: string, defaultLegendOpen: boolean }) => {
+    const [legendOpen, setLegendOpen] = useState(defaultLegendOpen);
+
+    return (
+      <div
+        className={cn(
+          "pointer-events-auto hidden flex-col items-end gap-2 lg:flex",
+          className,
+        )}
+      >
+        <Select
+          value={String(obs.datasetIndex)}
+          onValueChange={(v) => obs.selectDataset(Number(v))}
+        >
+          <SelectTrigger className="min-w-[270px] w-full border-white/15 bg-[#0c111c]/80 text-[#e8eef7] backdrop-blur">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="border-white/15 bg-[#0c111c] text-[#e8eef7]">
+            {DATASETS.map((d, i) => (
+              <SelectItem key={d.id} value={String(i)}>
+                {d.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Card className="min-w-[270px] w-full border-white/10 bg-[#0c111c]/80 p-3 text-[#e8eef7] backdrop-blur">
+          <button
+            onClick={() => setLegendOpen((o) => !o)}
+            className="flex w-full items-center justify-between text-xs font-semibold uppercase tracking-wider opacity-80"
+          >
+            Llegenda <span>{legendOpen ? "▾" : "▸"}</span>
+          </button>
+          {legendOpen && (
+            <div className="mt-2 flex flex-col gap-1.5">
+              {legendMetrics.map((m) => {
+                const css = "#" + m.hex.toString(16).padStart(6, "0");
+                return (
+                  <button
+                    key={m.label}
+                    onClick={() => obs.toggleMetric(m.label)}
+                    className={cn(
+                      "flex items-center gap-2.5 text-left text-sm transition-opacity",
+                      m.enabled ? "opacity-100" : "opacity-35",
+                    )}
+                  >
+                    <span
+                      className="h-2.5 w-2.5 shrink-0 rounded-sm"
+                      style={{
+                        background: css,
+                        boxShadow: m.enabled ? `0 0 6px ${css}` : "none",
+                      }}
+                    />
+                    <span className="flex-1">{m.label}</span>
+                    <span style={{ color: css }}>{Math.round(m.value)}</span>
+                    <span className="opacity-50">{ds.unit}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </Card>
+      </div>
+    );
+  };
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-[#0d1525] text-[#e8eef7]">
@@ -64,63 +129,10 @@ export function Observatori() {
               {ds.scope}
             </div>
             <div className="text-2xl font-semibold tracking-tight">{ds.name}</div>
-            <p className="mt-1.5 max-w-[280px] text-sm opacity-70">{ds.desc}</p>
+            <p className="mt-1.5 max-w-[280px] text-sm opacity-70 hidden md:block">{ds.desc}</p>
           </div>
 
-          <div className="pointer-events-auto flex flex-col items-end gap-2">
-            <Select
-              value={String(obs.datasetIndex)}
-              onValueChange={(v) => obs.selectDataset(Number(v))}
-            >
-              <SelectTrigger className="w-[270px] border-white/15 bg-[#0c111c]/80 text-[#e8eef7] backdrop-blur">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="border-white/15 bg-[#0c111c] text-[#e8eef7]">
-                {DATASETS.map((d, i) => (
-                  <SelectItem key={d.id} value={String(i)}>
-                    {d.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Card className="w-[270px] border-white/10 bg-[#0c111c]/80 p-3 text-[#e8eef7] backdrop-blur">
-              <button
-                onClick={() => setLegendOpen((o) => !o)}
-                className="flex w-full items-center justify-between text-xs font-semibold uppercase tracking-wider opacity-80"
-              >
-                Llegenda <span>{legendOpen ? "▾" : "▸"}</span>
-              </button>
-              {legendOpen && (
-                <div className="mt-2 flex flex-col gap-1.5">
-                  {legendMetrics.map((m) => {
-                    const css = "#" + m.hex.toString(16).padStart(6, "0");
-                    return (
-                      <button
-                        key={m.label}
-                        onClick={() => obs.toggleMetric(m.label)}
-                        className={cn(
-                          "flex items-center gap-2.5 text-left text-sm transition-opacity",
-                          m.enabled ? "opacity-100" : "opacity-35"
-                        )}
-                      >
-                        <span
-                          className="h-2.5 w-2.5 shrink-0 rounded-sm"
-                          style={{
-                            background: css,
-                            boxShadow: m.enabled ? `0 0 6px ${css}` : "none",
-                          }}
-                        />
-                        <span className="flex-1">{m.label}</span>
-                        <span style={{ color: css }}>{Math.round(m.value)}</span>
-                        <span className="opacity-50">{ds.unit}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </Card>
-          </div>
+          <SelectorDataset className="lg:flex hidden w-[270px]" defaultLegendOpen={true} />
         </div>
 
         {/* peu: timeline + ajuda */}
@@ -144,6 +156,7 @@ export function Observatori() {
               />
             </Card>
           )}
+          <SelectorDataset className="lg:hidden flex max-w-lg mx-auto w-full" defaultLegendOpen={false} />
           <div className="font-mono text-xs opacity-40 text-center">
             <span className="hidden sm:inline">Arrossega per orbitar · Scroll per a fer zoom</span>
             <span className="sm:hidden">Arrossega per orbitar · Pinça per fer zoom</span>

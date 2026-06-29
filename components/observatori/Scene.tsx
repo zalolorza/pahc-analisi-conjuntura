@@ -5,6 +5,7 @@ import { EffectComposer, Bloom } from "@react-three/postprocessing";
 import { useMemo, useState, useCallback, useEffect } from "react";
 import * as THREE from "three";
 import { buildCity } from "@/lib/observatori/city";
+import { useMediaQuery } from "@/lib/useMediaQuery";
 import type { Metric } from "@/lib/observatori/types";
 import { CityStatics, Lamps, RoofLights } from "./CityStatics";
 import { Windows, type LightInfo } from "./Windows";
@@ -21,11 +22,13 @@ interface SceneProps {
 }
 
 export function Scene({ metrics, counts, unit, datasetIndex, invert = false, onCity }: SceneProps) {
-  // construïm la ciutat un sol cop
+  const isCompact = useMediaQuery("(max-width: 1023px)");
+
   const city = useMemo(() => {
-    const c = buildCity(6, 5, 1, 0.68);
-    return c;
-  }, []);
+    const cols = isCompact ? 5 : 6;
+    const rows = isCompact ? 4 : 5;
+    return buildCity(cols, rows, 1, 0.68);
+  }, [isCompact]);
 
   // informem del nombre total de plantes (per a la distribució del pare)
   useEffect(() => {
@@ -55,7 +58,7 @@ export function Scene({ metrics, counts, unit, datasetIndex, invert = false, onC
         scene.fog = new THREE.FogExp2(0x0d1525, 0.013);
       }}
     >
-      <ambientLight color={0x0e1424} intensity={60} />
+      <ambientLight color={0x0e1424} intensity={isCompact ? 120 : 60} />
       <directionalLight color={0x8fa6d8} intensity={2} position={[-14, 26, -10]} />
       {/* <hemisphereLight color={0x2b3a5e} groundColor={0x0a0e17} intensity={0.4} /> */}
 
