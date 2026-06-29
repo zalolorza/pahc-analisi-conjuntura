@@ -109,6 +109,8 @@ export function CameraRig({ aim, city }: CameraRigProps) {
     targetPhi: null as number | null,
     userInteracted: false,
     dragging: false,
+    pinching: false,
+    pinchDist: 0,
     px: 0,
     py: 0,
     lastAimedDatasetIndex: -1,
@@ -129,10 +131,21 @@ export function CameraRig({ aim, city }: CameraRigProps) {
     return () => cam.clearViewOffset();
   }, [camera, size.width, size.height]);
 
-  // interacció ratolí/roda
+  // interacció ratolí/roda i tàctil
   useEffect(() => {
     const el = gl.domElement;
     const s = state.current;
+    const prevTouchAction = el.style.touchAction;
+    el.style.touchAction = "none";
+
+    const orbitFromDelta = (dx: number, dy: number) => {
+      s.userInteracted = true;
+      s.targetTheta = null;
+      s.targetPhi = null;
+      s.theta -= dx * 0.005;
+      s.phi = Math.max(0.2, Math.min(1.4, s.phi - dy * 0.005));
+    };
+
     const down = (e: MouseEvent) => {
       s.dragging = true;
       s.px = e.clientX;
@@ -143,26 +156,81 @@ export function CameraRig({ aim, city }: CameraRigProps) {
     };
     const move = (e: MouseEvent) => {
       if (!s.dragging) return;
-      s.userInteracted = true;
-      s.targetTheta = null;
-      s.targetPhi = null;
-      s.theta -= (e.clientX - s.px) * 0.005;
-      s.phi = Math.max(0.2, Math.min(1.4, s.phi - (e.clientY - s.py) * 0.005));
+      orbitFromDelta(e.clientX - s.px, e.clientY - s.py);
       s.px = e.clientX;
       s.py = e.clientY;
     };
     const wheel = (e: WheelEvent) => {
       s.radius = Math.max(14, Math.min(60, s.radius + e.deltaY * 0.02));
     };
+
+    const pinchDistance = (touches: TouchList) => {
+      const [a, b] = [touches[0], touches[1]];
+      return Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY);
+    };
+
+    const touchStart = (e: TouchEvent) => {
+      if (e.touches.length === 1) {
+        s.dragging = true;
+        s.pinching = false;
+        s.px = e.touches[0].clientX;
+        s.py = e.touches[0].clientY;
+      } else if (e.touches.length === 2) {
+        s.dragging = false;
+        s.pinching = true;
+        s.pinchDist = pinchDistance(e.touches);
+      }
+    };
+    const touchMove = (e: TouchEvent) => {
+      if (s.pinching && e.touches.length >= 2) {
+        e.preventDefault();
+        const dist = pinchDistance(e.touches);
+        const scale = dist / s.pinchDist;
+        if (scale > 0) {
+          s.radius = Math.max(14, Math.min(60, s.radius / scale));
+        }
+        s.pinchDist = dist;
+        return;
+      }
+      if (!s.dragging || e.touches.length !== 1) return;
+      e.preventDefault();
+      const t = e.touches[0];
+      orbitFromDelta(t.clientX - s.px, t.clientY - s.py);
+      s.px = t.clientX;
+      s.py = t.clientY;
+    };
+    const touchEnd = (e: TouchEvent) => {
+      if (e.touches.length === 0) {
+        s.dragging = false;
+        s.pinching = false;
+        return;
+      }
+      if (e.touches.length === 1) {
+        s.pinching = false;
+        s.dragging = true;
+        s.px = e.touches[0].clientX;
+        s.py = e.touches[0].clientY;
+      }
+    };
+
     el.addEventListener("mousedown", down);
     window.addEventListener("mouseup", up);
     window.addEventListener("mousemove", move);
     el.addEventListener("wheel", wheel, { passive: true });
+    el.addEventListener("touchstart", touchStart, { passive: true });
+    el.addEventListener("touchmove", touchMove, { passive: false });
+    el.addEventListener("touchend", touchEnd);
+    el.addEventListener("touchcancel", touchEnd);
     return () => {
+      el.style.touchAction = prevTouchAction;
       el.removeEventListener("mousedown", down);
       window.removeEventListener("mouseup", up);
       window.removeEventListener("mousemove", move);
       el.removeEventListener("wheel", wheel);
+      el.removeEventListener("touchstart", touchStart);
+      el.removeEventListener("touchmove", touchMove);
+      el.removeEventListener("touchend", touchEnd);
+      el.removeEventListener("touchcancel", touchEnd);
     };
   }, [gl]);
 
@@ -198,7 +266,7 @@ export function CameraRig({ aim, city }: CameraRigProps) {
   useFrame(() => {
     const s = state.current;
     // anima theta cap a l'objectiu pel camí més curt
-    if (s.targetTheta !== null && !s.dragging && !s.userInteracted) {
+    if (s.targetTheta !== null && !s.dragging && !s.pinching && !s.userInteracted) {
       let diff = s.targetTheta - s.theta;
       while (diff > Math.PI) diff -= 2 * Math.PI;
       while (diff < -Math.PI) diff += 2 * Math.PI;
@@ -209,7 +277,7 @@ export function CameraRig({ aim, city }: CameraRigProps) {
       }
     }
     // anima phi
-    if (s.targetPhi !== null && !s.dragging && !s.userInteracted) {
+    if (s.targetPhi !== null && !s.dragging && !s.pinching && !s.userInteracted) {
       const diff = s.targetPhi - s.phi;
       if (Math.abs(diff) > 0.002) s.phi += diff * 0.06;
       else {

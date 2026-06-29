@@ -1,6 +1,41 @@
 import type { Dataset } from "./types";
 import { expandTemporal } from "./spline";
 
+function lerpPalette(from: number, to: number, steps: number): number[] {
+  const fr = (from >> 16) & 0xff;
+  const fg = (from >> 8) & 0xff;
+  const fb = from & 0xff;
+  const tr = (to >> 16) & 0xff;
+  const tg = (to >> 8) & 0xff;
+  const tb = to & 0xff;
+  return Array.from({ length: steps }, (_, i) => {
+    const t = steps === 1 ? 0 : i / (steps - 1);
+    const r = Math.round(fr + (tr - fr) * t);
+    const g = Math.round(fg + (tg - fg) * t);
+    const b = Math.round(fb + (tb - fb) * t);
+    return (r << 16) | (g << 8) | b;
+  });
+}
+
+// Pobresa energètica (Manresa, Cens 2021) — Taula 31 Idescat
+const ENERGY_POVERTY_LABELS = [
+  "< 250 kWh",
+  "251–500 kWh",
+  "501–750 kWh",
+  "751–1.000 kWh",
+  "1.001–2.000 kWh",
+  "2.001–3.000 kWh",
+  "3.001–4.000 kWh",
+  "4.001–5.000 kWh",
+  "5.001–6.000 kWh",
+  "6.001–7.000 kWh",
+  "7.001–8.000 kWh",
+  "8.001–9.000 kWh",
+  "9.001–10.000 kWh",
+  "> 10.000 kWh",
+];
+const ENERGY_POVERTY_COLORS = lerpPalette(0xff2020, 0x1a6fff, ENERGY_POVERTY_LABELS.length);
+
 // Partits del Parlament de Catalunya
 const PARTY_LABELS = ["PSC", "ERC", "Junts", "Aliança", "Vox", "PP", "Comuns", "CUP"];
 const PARTY_COLORS = [
@@ -161,5 +196,32 @@ export const DATASETS: Dataset[] = [
       CaixaBank: 0.67,
     },
     invert: true,
+  },
+  // Pobresa energètica (Manresa, Cens 2021) — Taula 31 Idescat
+  {
+    id: "pobresa_energetica",
+    name: "Pobresa energètica",
+    scope: "Manresa",
+    desc: "Distribució del consum elèctric dels habitatges de Manresa (Cens 2021). Les categories de consum baix (< 250 kWh) agrupen el llindar mínim i el tram fins a 250 kWh. Font: Idescat.",
+    unit: "",
+    legendByLabel: true,
+    labels: ENERGY_POVERTY_LABELS,
+    colors: ENERGY_POVERTY_COLORS,
+    values: {
+      "< 250 kWh": 6500,
+      "251–500 kWh": 1136,
+      "501–750 kWh": 1422,
+      "751–1.000 kWh": 1913,
+      "1.001–2.000 kWh": 10132,
+      "2.001–3.000 kWh": 8261,
+      "3.001–4.000 kWh": 4398,
+      "4.001–5.000 kWh": 2256,
+      "5.001–6.000 kWh": 1218,
+      "6.001–7.000 kWh": 791,
+      "7.001–8.000 kWh": 536,
+      "8.001–9.000 kWh": 373,
+      "9.001–10.000 kWh": 309,
+      "> 10.000 kWh": 891,
+    },
   },
 ];

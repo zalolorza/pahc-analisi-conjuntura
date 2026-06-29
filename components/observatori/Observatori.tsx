@@ -25,8 +25,9 @@ export function Observatori() {
   const [legendOpen, setLegendOpen] = useState(true);
   const ds = obs.dataset;
 
-  // llegenda ordenada per valor descendent
-  const legendMetrics = [...obs.metrics].sort((a, b) => b.value - a.value);
+  const legendMetrics = ds.legendByLabel
+    ? obs.metrics
+    : [...obs.metrics].sort((a, b) => b.value - a.value);
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-[#0d1525] text-[#e8eef7]">
@@ -144,7 +145,8 @@ export function Observatori() {
             </Card>
           )}
           <div className="font-mono text-xs opacity-40 text-center">
-            Arrossega per orbitar · Scroll per a fer zoom
+            <span className="hidden sm:inline">Arrossega per orbitar · Scroll per a fer zoom</span>
+            <span className="sm:hidden">Arrossega per orbitar · Pinça per fer zoom</span>
           </div>
         </div>
       </div>

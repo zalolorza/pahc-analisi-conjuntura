@@ -24,6 +24,8 @@ export interface Dataset {
   defaultEnabled?: string[];
   /** inverteix l'ordre del flux al serpentí (categories grans al final) */
   invert?: boolean;
+  /** llegenda en ordre de labels (per defecte: per valor descendent) */
+  legendByLabel?: boolean;
   temporal?: boolean;
   periods?: string[];
   series?: Record<string, number[]>;
